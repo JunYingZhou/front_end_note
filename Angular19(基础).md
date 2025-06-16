@@ -723,6 +723,137 @@ export class AppComponent {
 
 
 
+## 5.📘Signal 
+
+------
+
+### ✅ 1. 什么是 Angular 中的 Signal？
+
+在 **Angular 16+（包括 Angular 19）** 中，引入了一个新的响应式原语 —— **Signal（信号）**，用于管理本地状态。
+ 它是一种 **同步、细粒度且自动通知依赖方的响应式数据机制**，可以作为 `Observable` 的替代，用于组件内部的状态管理。
+
+它的特点包括：
+
+- 包裹一个值，并在该值变化时通知使用它的地方；
+- 可以在组件模板中直接使用；
+- 不需要手动订阅或取消订阅。
+
+> 适用于本地 UI 状态、组件内状态，是 Angular 响应式系统的重要补充。
+
+------
+
+### ✅ 2. 如何创建一个 Signal？
+
+通过 `signal()` 函数来创建：
+
+```ts
+import { signal } from '@angular/core';
+
+const counter = signal(0);
+```
+
+在组件中使用示例：
+
+```ts
+import { Component, signal } from '@angular/core';
+
+@Component({
+  selector: 'app-counter',
+  template: `
+    <p>Count: {{ counter() }}</p>
+    <button (click)="increment()">增加</button>
+  `,
+})
+export class CounterComponent {
+  counter = signal(0);
+
+  increment() {
+    this.counter.set(this.counter() + 1);
+  }
+}
+```
+
+------
+
+### ✅ 3. 如何读取 Signal 的值？
+
+使用 `signal()` 这个函数来读取当前值：
+
+```ts
+const current = counter();  // 读取当前值
+```
+
+> 注意：Signal 不是普通变量，而是一个 **函数**，调用它才返回值。
+
+------
+
+### ✅ 4. 如何更新 Signal？
+
+更新 Signal 有三种方式：
+
+#### a) `set()`：直接设置新值
+
+```ts
+this.counter.set(10);
+```
+
+#### b) `update()`：基于当前值更新
+
+```ts
+this.counter.update(value => value + 1);
+```
+
+#### c) `mutate()`：就地修改对象/数组（仅适用于复杂类型）
+
+```ts
+this.user = signal({ name: 'Ryan', age: 25 });
+
+this.user.mutate(u => {
+  u.age += 1;
+});
+```
+
+------
+
+### ✅ 5. 使用对象类型的 Signal 示例
+
+```ts
+user = signal({ name: 'Alice', age: 30 });
+
+get userName() {
+  return this.user().name;
+}
+
+updateName(newName: string) {
+  this.user.update(user => ({ ...user, name: newName }));
+}
+```
+
+------
+
+### ✅ 6. 在模板中使用 Signal
+
+你可以直接在模板中使用信号：
+
+```html
+<p>姓名：{{ user().name }}</p>
+<button (click)="updateName('Bob')">修改姓名</button>
+```
+
+------
+
+### ✅ 7. 总结
+
+| 操作方式 | 示例                                        | 说明         |
+| -------- | ------------------------------------------- | ------------ |
+| 创建     | `const count = signal(0)`                   | 创建信号变量 |
+| 读取     | `count()`                                   | 获取当前值   |
+| 设置     | `count.set(5)`                              | 设置为新值   |
+| 更新     | `count.update(v => v + 1)`                  | 基于旧值更新 |
+| 变异     | `signalObject.mutate(obj => { obj.x = 1 })` | 修改对象内容 |
+
+------
+
 
 
 
@@ -1043,4 +1174,325 @@ export class DemoComponent {
 ------
 
 
+
+### 🎨动态CSS/Class
+
+------
+
+#### ✅ 一、动态 CSS（Dynamic Style）
+
+1. `[style]` 单属性绑定
+
+```html
+<div [style.color]="'red'">Red Text</div>
+<div [style.font-size.px]="fontSize">Dynamic Font Size</div>
+fontSize = 20;
+```
+
+2. `[ngStyle]` 多属性绑定
+
+```html
+<div [ngStyle]="{ 'color': color, 'font-size.px': fontSize }">
+  Styled Text
+</div>
+color = 'blue';
+fontSize = 18;
+```
+
+------
+
+#### ✅ 二、动态类（Dynamic Class）
+
+1. `[class.class-name]` 单类名绑定
+
+```html
+<div [class.active]="isActive">Single Class</div>
+isActive = true;
+```
+
+2. `[ngClass]` 多类名绑定
+
+写法1：使用对象形式（推荐）
+
+```html
+<div [ngClass]="{ 'active': isActive, 'highlight': isHighlighted }">
+  Multiple Classes
+</div>
+isActive = true;
+isHighlighted = false;
+```
+
+写法2：使用数组形式
+
+```html
+<div [ngClass]="[class1, class2]">Dynamic Classes</div>
+class1 = 'active';
+class2 = 'text-large';
+```
+
+写法3：直接传入字符串
+
+```html
+<div [ngClass]="dynamicClass">Dynamic Class</div>
+dynamicClass = 'btn-primary';
+```
+
+------
+
+#### ✅ 三、实战建议
+
+- 动态样式适合用于样式值频繁变化的场景（比如颜色、宽度等）。
+- 动态类适合用于控制状态相关的样式（比如是否选中、是否禁用等）。
+
+------
+
+#### ✅ 四、结合条件判断的例子
+
+```html
+<button
+  [ngClass]="{
+    'btn': true,
+    'btn-primary': type === 'primary',
+    'btn-danger': type === 'danger'
+  }"
+  [style.background-color]="bgColor"
+>
+  Button
+</button>
+type = 'primary';
+bgColor = '#ccc';
+```
+
+------
+
+
+
+非常好，下面是一个**最详细、分层次讲解 Angular 模块设计的版本**，将包括：
+
+- `NgModule` 背后设计思想；
+- Angular 模块的分层架构；
+- 项目结构与模块拆分建议；
+- Standalone 架构与融合策略；
+- 实战示例与注意事项。
+
+------
+
+### 📦 Angular 模块设计
+
+------
+
+#### 🧠 一、设计思想：为什么 Angular 有模块系统？
+
+##### 核心目标：
+
+1. **功能隔离**（高内聚低耦合）；
+2. **作用域控制**（组件/服务/指令只在需要范围内生效）；
+3. **依赖管理**（组件使用谁、谁能使用我）；
+4. **懒加载支持**（优化初次加载性能）；
+5. **可维护性与可测试性提升**。
+
+------
+
+#### 🏗️ 二、传统 NgModule 架构设计
+
+##### 💡 NgModule 是 Angular 的逻辑边界单位。
+
+```ts
+@NgModule({
+  declarations: [...],  // 本模块定义的视图类（组件/指令/管道）
+  imports: [...],       // 本模块依赖的其他模块
+  exports: [...],       // 要让外部使用的视图类
+  providers: [...]      // 服务注入（可限定作用域）
+})
+export class FeatureModule {}
+```
+
+------
+
+##### 🧱 NgModule 分层分类
+
+| 层级   | 模块名称        | 作用                                 |
+| ------ | --------------- | ------------------------------------ |
+| 根层   | `AppModule`     | 应用的唯一入口                       |
+| 核心层 | `CoreModule`    | 全局服务、单例提供者、拦截器等       |
+| 共享层 | `SharedModule`  | 通用组件/指令/管道（无服务）         |
+| 功能层 | `FeatureModule` | 独立业务功能，如用户、订单、产品模块 |
+| 页面层 | `PageModule`    | 通常配合路由，每个页面独立为模块     |
+| 组件层 | `WidgetModule`  | 复杂通用组件（表格、上传等）         |
+
+------
+
+##### 📁 目录结构推荐（NgModule）
+
+```
+src/
+├── app/
+│   ├── app.module.ts
+│   ├── core/                # CoreModule
+│   ├── shared/              # SharedModule
+│   ├── features/
+│   │   └── user/
+│   │       ├── user.module.ts
+│   │       ├── components/
+│   │       ├── pages/
+│   │       └── services/
+│   └── pages/
+```
+
+------
+
+##### 💡 `forRoot()` 和 `forChild()` 用法（服务作用域控制）
+
+- **SharedModule** 不应提供服务；
+- **CoreModule** 中服务应以 `forRoot()` 方式提供；
+
+```ts
+@NgModule({})
+export class SomeLibraryModule {
+  static forRoot(): ModuleWithProviders<SomeLibraryModule> {
+    return {
+      ngModule: SomeLibraryModule,
+      providers: [SomeService]
+    };
+  }
+}
+```
+
+------
+
+#### 🧭 三、路由与模块的关系
+
+##### 路由懒加载（配合模块拆分）
+
+```ts
+const routes: Routes = [
+  {
+    path: 'user',
+    loadChildren: () => import('./features/user/user.module').then(m => m.UserModule)
+  }
+];
+```
+
+##### 每个懒加载模块应：
+
+- 拥有自己的 RoutingModule（`RouterModule.forChild()`）
+- 不再出现在 AppRoutingModule 中
+
+------
+
+#### ✨ 四、Standalone 架构（Angular 15+ 新趋势）
+
+##### ✅ 什么是 Standalone？
+
+- 可以脱离 `NgModule` 独立存在的组件/指令/管道；
+- 更轻量；
+- 更符合现代组件开发模型（像 React）；
+- Angular 17 起默认推荐。
+
+```ts
+@Component({
+  standalone: true,
+  imports: [CommonModule],
+  template: `...`
+})
+export class HelloComponent {}
+```
+
+------
+
+##### ✅ Standalone 使用示例
+
+路由中直接使用：
+
+```ts
+const routes: Routes = [
+  {
+    path: 'home',
+    component: HomeComponent // standalone: true
+  }
+];
+```
+
+嵌套组合：
+
+```ts
+@Component({
+  standalone: true,
+  imports: [MatButtonModule, SharedComponent],
+  template: `<shared-button />`
+})
+export class PageComponent {}
+```
+
+------
+
+#### 🧩 五、NgModule 与 Standalone 混合设计推荐
+
+1. 渐进式迁移策略（企业项目适用）
+
+| 推荐层                   | 使用类型                   |
+| ------------------------ | -------------------------- |
+| Page层（每页）           | Standalone Component       |
+| Layout层                 | Standalone                 |
+| Widget层（表格、卡片等） | Standalone                 |
+| SharedModule             | 保留（兼容旧模块）         |
+| CoreModule               | 可保留（用于服务、拦截器） |
+
+------
+
+2. 模块划分建议（基于 Standalone）
+
+```
+src/
+├── app.config.ts             // providers + routes + bootstrap（新风格）
+├── features/
+│   ├── home/
+│   │   ├── home.page.ts     // standalone page
+│   │   ├── components/      // standalone UI 组件
+│   │   └── services/
+├── shared/                   // 纯组件库
+├── core/                     // 单例服务（仍推荐 NgModule）
+```
+
+------
+
+#### ✅ 六、模块设计实战经验总结
+
+| 场景                       | 建议                                            |
+| -------------------------- | ----------------------------------------------- |
+| 组件被多个页面复用         | 放到 `shared/components/` 并设为 standalone     |
+| 页面只属于一个业务功能模块 | 使用 feature 目录组织并懒加载                   |
+| 全局服务                   | 放在 CoreModule 中，注册为 `providedIn: 'root'` |
+| 指令/管道被多个地方使用    | 放入 SharedModule 并导出                        |
+| 配合 SSR 或微前端          | 推荐继续使用 NgModule 组织公共资源              |
+
+------
+
+#### ⚠️ 七、常见误区与建议
+
+| 问题                    | 解决方案                                 |
+| ----------------------- | ---------------------------------------- |
+| 模块循环依赖            | 拆分为更小模块或使用 InjectionToken 替代 |
+| 服务多次实例化          | 使用 `providedIn: 'root'` 或 `forRoot()` |
+| 导入未导出组件报错      | 确保导出声明到 exports 数组中            |
+| 所有模块都放 AppModule  | ❌，应拆分为 Feature + Shared             |
+| 把服务放在 SharedModule | ❌，应放 CoreModule 或使用 `providedIn`   |
+
+------
+
+#### 🔚 八、结语
+
+Angular 的模块系统（NgModule + Standalone）在 Angular 19 中是双轨并行：
+
+- `NgModule` 适合大型项目、复杂依赖；
+- `Standalone` 更现代、更灵活，建议逐步迁移。
+
+模块设计是 Angular 架构的核心，合理划分模块可以极大提升：
+
+✅ 项目可维护性
+ ✅ 团队协作效率
+ ✅ 性能（懒加载）
+ ✅ 可测试性（每个模块单测）
+
+------
 
