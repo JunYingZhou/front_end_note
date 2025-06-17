@@ -858,6 +858,399 @@ updateName(newName: string) {
 
 
 
+## 6.🧠 路由守卫
+
+Angular 应用一般通过路由实现页面跳转。路由守卫的作用是：
+
+- 防止未登录用户访问受保护页面（如后台管理页）
+- 防止未保存的表单数据被意外丢弃
+- 控制模块是否懒加载
+- 在路由跳转前获取数据
+- 实现细粒度访问控制（如角色权限）
+
+------
+
+🛡️ 路由守卫的类型与原理详解
+
+Angular 提供了 **5 类守卫接口**，分别在不同导航阶段执行。
+
+| 守卫接口           | 生命周期位置   | 作用                                           |
+| ------------------ | -------------- | ---------------------------------------------- |
+| `CanActivate`      | 在进入路由前   | 判断是否允许访问                               |
+| `CanActivateChild` | 进入子路由前   | 判断是否允许进入子页面                         |
+| `CanDeactivate`    | 离开当前组件前 | 判断是否允许离开                               |
+| `CanLoad`          | 懒加载模块前   | 判断是否加载模块（懒加载模块不会生成 JS 文件） |
+| `Resolve`          | 路由激活前     | 预加载数据并传给组件                           |
+
+------
+
+1️⃣ `CanActivate`：控制是否允许进入页面
+
+👇 示例场景：登录验证
+
+步骤一：创建守卫
+
+```bash
+ng generate guard auth
+```
+
+实现逻辑
+
+```ts
+@Injectable({ providedIn: 'root' })
+export class AuthGuard implements CanActivate {
+  constructor(private auth: AuthService, private router: Router) {}
+
+  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean | UrlTree {
+    if (this.auth.isLoggedIn()) {
+      return true;
+    } else {
+      return this.router.parseUrl('/login');
+    }
+  }
+}
+```
+
+路由配置中使用
+
+```ts
+{
+  path: 'admin',
+  component: AdminPageComponent,
+  canActivate: [AuthGuard],
+}
+```
+
+------
+
+2️⃣ `CanActivateChild`：控制是否允许进入子路由
+
+用于有父子路由结构的情况：
+
+```ts
+{
+  path: 'admin',
+  component: AdminLayoutComponent,
+  canActivateChild: [AuthGuard],
+  children: [
+    { path: 'dashboard', component: DashboardComponent },
+    { path: 'users', component: UserListComponent }
+  ]
+}
+```
+
+`AuthGuard` 需要实现 `CanActivateChild` 接口：
+
+```ts
+export class AuthGuard implements CanActivateChild {
+  canActivateChild(): boolean {
+    // 判断是否有子路由访问权限
+    return true;
+  }
+}
+```
+
+------
+
+3️⃣ `CanDeactivate`：控制是否允许离开当前页面
+
+👇 示例场景：表单未保存提醒
+
+第一步：定义组件接口
+
+```ts
+export interface CanComponentDeactivate {
+  canDeactivate: () => boolean | Observable<boolean>;
+}
+```
+
+第二步：组件中实现该接口
+
+```ts
+export class EditFormComponent implements CanComponentDeactivate {
+  formDirty = true;
+
+  canDeactivate(): boolean {
+    return this.formDirty ? confirm('表单未保存，是否离开？') : true;
+  }
+}
+```
+
+第三步：创建守卫并使用接口
+
+```ts
+@Injectable({ providedIn: 'root' })
+export class DeactivateGuard implements CanDeactivate<CanComponentDeactivate> {
+  canDeactivate(component: CanComponentDeactivate): boolean {
+    return component.canDeactivate();
+  }
+}
+```
+
+路由中使用
+
+```ts
+{
+  path: 'edit',
+  component: EditFormComponent,
+  canDeactivate: [DeactivateGuard]
+}
+```
+
+------
+
+4️⃣ `CanLoad`：控制模块是否懒加载
+
+👇 示例场景：根据权限决定是否加载模块
+
+使用方式
+
+```ts
+{
+  path: 'admin',
+  loadChildren: () => import('./admin/admin.module').then(m => m.AdminModule),
+  canLoad: [AuthGuard]
+}
+```
+
+守卫逻辑：
+
+```ts
+export class AuthGuard implements CanLoad {
+  constructor(private auth: AuthService, private router: Router) {}
+
+  canLoad(route: Route, segments: UrlSegment[]): boolean | UrlTree {
+    return this.auth.hasAdminRole() || this.router.parseUrl('/unauthorized');
+  }
+}
+```
+
+**注意**：`CanLoad` 不允许访问 `ActivatedRouteSnapshot`，也无法访问路由参数。
+
+------
+
+5️⃣ `Resolve`：跳转前获取数据并传入组件
+
+👇 示例场景：文章详情页跳转前加载文章数据
+
+第一步：定义 Resovler
+
+```ts
+@Injectable({ providedIn: 'root' })
+export class ArticleResolver implements Resolve<Article> {
+  constructor(private articleService: ArticleService) {}
+
+  resolve(route: ActivatedRouteSnapshot): Observable<Article> {
+    const id = route.paramMap.get('id')!;
+    return this.articleService.getArticleById(id);
+  }
+}
+```
+
+第二步：路由中使用
+
+```ts
+{
+  path: 'article/:id',
+  component: ArticleDetailComponent,
+  resolve: { article: ArticleResolver }
+}
+```
+
+第三步：组件中获取数据
+
+```ts
+this.route.data.subscribe(data => {
+  this.article = data['article'];
+});
+```
+
+------
+
+✅ 守卫返回值说明（高级）
+
+守卫可以返回：
+
+| 返回值类型                  | 含义               |
+| --------------------------- | ------------------ |
+| `true`                      | 允许导航           |
+| `false`                     | 阻止导航           |
+| `UrlTree`                   | 重定向导航（跳转） |
+| `Promise/Observable<boolean | UrlTree>`          |
+
+------
+
+🧠 小贴士
+
+- 守卫都是通过路由配置声明生效。
+- `CanLoad` 不能访问动态参数、不能用于非懒加载模块。
+- `Resolve` 可以配合 skeleton loading 提升用户体验。
+- `CanDeactivate` 非常适合处理表单退出确认。
+
+------
+
+📌 总结表格
+
+| 守卫类型           | 控制点         | 场景         | 是否支持异步 | 访问 route 参数？ |
+| ------------------ | -------------- | ------------ | ------------ | ----------------- |
+| `CanActivate`      | 进入路由前     | 登录控制     | ✅            | ✅                 |
+| `CanActivateChild` | 子路由前       | 多级权限     | ✅            | ✅                 |
+| `CanDeactivate`    | 离开当前页面前 | 表单保存确认 | ✅            | ✅                 |
+| `CanLoad`          | 懒加载模块前   | 动态权限模块 | ✅            | ❌                 |
+| `Resolve`          | 路由激活前     | 数据预加载   | ✅            | ✅                 |
+
+------
+
+
+
+在 Angular 中，表单校验是表单系统中非常重要的一部分。它支持 **模板驱动表单（Template-driven Forms）** 和 **响应式表单（Reactive Forms）** 两种模式，校验方式灵活、强大，适用于各种场景。
+
+------
+
+## 7.🧭 Angular 表单校验
+
+ 表单类型概览
+
+| 类型         | 特点                         | 推荐场景                           |
+| ------------ | ---------------------------- | ---------------------------------- |
+| 模板驱动表单 | 使用模板 HTML 中的指令       | 表单简单，代码少                   |
+| 响应式表单   | 使用 TypeScript 构建表单模型 | 表单复杂、可扩展性强、适合企业项目 |
+
+------
+
+🧩 常见内置校验器（Validators）
+
+Angular 提供了一些内置的校验器（用于响应式或模板驱动表单）：
+
+| 校验器                   | 说明                             |
+| ------------------------ | -------------------------------- |
+| `required`               | 必填                             |
+| `minlength`, `maxlength` | 字符长度限制                     |
+| `min`, `max`             | 数值范围                         |
+| `email`                  | 检查 email 格式                  |
+| `pattern`                | 正则表达式                       |
+| 自定义校验器             | 你可以写自己的函数来进行逻辑判断 |
+
+------
+
+📘 一、响应式表单校验（推荐）
+
+1️⃣ 创建一个基本表单
+
+```ts
+import { FormBuilder, Validators } from '@angular/forms';
+
+constructor(private fb: FormBuilder) {}
+
+form = this.fb.group({
+  username: ['', [Validators.required, Validators.minLength(3)]],
+  email: ['', [Validators.required, Validators.email]],
+  age: [null, [Validators.min(18)]]
+});
+```
+
+2️⃣ HTML 表单绑定
+
+```html
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <input formControlName="username" placeholder="用户名" />
+  <div *ngIf="form.get('username')?.hasError('required')">用户名必填</div>
+  <div *ngIf="form.get('username')?.hasError('minlength')">用户名太短</div>
+
+  <input formControlName="email" placeholder="邮箱" />
+  <div *ngIf="form.get('email')?.hasError('email')">邮箱格式不正确</div>
+
+  <button type="submit" [disabled]="form.invalid">提交</button>
+</form>
+```
+
+3️⃣ 提交逻辑
+
+```ts
+submit() {
+  if (this.form.valid) {
+    console.log(this.form.value);
+  } else {
+    this.form.markAllAsTouched(); // 强制触发所有校验提示
+  }
+}
+```
+
+------
+
+🔧 自定义校验器（同步）
+
+例如：不能为 "admin"
+
+```ts
+function forbiddenNameValidator(control: AbstractControl): ValidationErrors | null {
+  return control.value === 'admin' ? { forbiddenName: true } : null;
+}
+
+this.form = this.fb.group({
+  username: ['', [Validators.required, forbiddenNameValidator]]
+});
+```
+
+------
+
+🔁 异步校验器（如：检查用户名是否已存在）
+
+```ts
+function checkUsername(control: AbstractControl): Observable<ValidationErrors | null> {
+  return timer(500).pipe(
+    switchMap(() => control.value === 'taken' ? of({ userExists: true }) : of(null))
+  );
+}
+
+this.form = this.fb.group({
+  username: ['', [Validators.required], [checkUsername]]
+});
+```
+
+------
+
+📗 二、模板驱动表单校验
+
+1️⃣ HTML 模板写法
+
+```html
+<form #f="ngForm" (ngSubmit)="submit(f)">
+  <input name="email" ngModel required email #email="ngModel" />
+  <div *ngIf="email.errors?.['required']">必填</div>
+  <div *ngIf="email.errors?.['email']">格式错误</div>
+
+  <button type="submit" [disabled]="f.invalid">提交</button>
+</form>
+```
+
+------
+
+📌 表单状态与属性
+
+| 属性                  | 含义                       |
+| --------------------- | -------------------------- |
+| `valid / invalid`     | 整个表单或控件是否通过校验 |
+| `touched / untouched` | 是否被访问过               |
+| `dirty / pristine`    | 是否被修改过               |
+| `pending`             | 是否正在异步校验           |
+
+------
+
+✅ 最佳实践
+
+- 使用响应式表单 + `FormBuilder` 管理复杂表单。
+- 使用 `markAllAsTouched()` 在提交时强制触发所有校验。
+- 使用 `asyncValidator` 编写服务器异步校验器。
+- 拆分表单为多个 `FormGroup` 提高可维护性。
+- 在组件中定义错误提示逻辑，避免 HTML 过长。
+
+------
+
+
+
+
+
 
 
 ## Extension
