@@ -1249,6 +1249,112 @@ this.form = this.fb.group({
 
 
 
+## 8.🧠 组件通信
+
+### 一、基本概念
+
+| 装饰器      | 用途           | 数据方向 | 说明                       |
+| ----------- | -------------- | -------- | -------------------------- |
+| `@Input()`  | 父传子         | 父 ➡ 子  | 父组件向子组件传递数据     |
+| `@Output()` | 子传父事件通知 | 子 ➡ 父  | 子组件向父组件发出事件通知 |
+
+------
+
+### 二、`@Input()` 用法 —— 父传子
+
+✅ 子组件（child.component.ts）
+
+```ts
+import { Component, Input } from '@angular/core';
+
+@Component({
+  selector: 'app-child',
+  template: `<p>子组件收到：{{ title }}</p>`
+})
+export class ChildComponent {
+  @Input() title!: string;
+}
+```
+
+✅ 父组件（parent.component.html）
+
+```html
+<app-child [title]="'来自父组件的数据'"></app-child>
+```
+
+------
+
+### 三、`@Output()` 用法 —— 子传父
+
+✅ 子组件（child.component.ts）
+
+```ts
+import { Component, Output, EventEmitter } from '@angular/core';
+
+@Component({
+  selector: 'app-child',
+  template: `<button (click)="notifyParent()">点我发消息</button>`
+})
+export class ChildComponent {
+  @Output() message = new EventEmitter<string>();
+
+  notifyParent() {
+    this.message.emit('Hello 父组件！');
+  }
+}
+```
+
+✅ 父组件（parent.component.html）
+
+```html
+<app-child (message)="handleMessage($event)"></app-child>
+```
+
+✅ 父组件（parent.component.ts）
+
+```ts
+handleMessage(msg: string) {
+  console.log('父组件接收到:', msg);
+}
+```
+
+------
+
+### 四、进阶用法
+
+✅ `@Input()` 重命名属性
+
+```ts
+@Input('customName') title!: string;
+// 父组件中使用：[customName]="'值'"
+```
+
+✅ `@Output()` 重命名事件
+
+```ts
+@Output('notify') message = new EventEmitter();
+// 父组件中使用：(notify)="方法($event)"
+```
+
+------
+
+### 五、常见用途
+
+| 场景         | 使用装饰器                                    | 示例说明           |
+| ------------ | --------------------------------------------- | ------------------ |
+| 表单输入组件 | `@Input()` 接收初始值`@Output()` 抛出变更事件 | 表单封装、双向绑定 |
+| 父子组件通信 | `@Input()` 传配置`@Output()` 通知操作         | 列表项、弹窗控制   |
+
+------
+
+### 六、注意事项
+
+- `@Input()` 只能父传子，不能反过来；
+- `@Output()` 必须配合 `EventEmitter` 使用；
+- 父组件使用 `$event` 获取子组件传来的参数。
+
+------
+
 
 
 
