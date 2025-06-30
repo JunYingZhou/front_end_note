@@ -856,6 +856,204 @@ updateName(newName: string) {
 
 
 
+当然可以！下面是整理好的 **Angular 路由（Routing）笔记**，内容涵盖配置、跳转、参数、守卫等，适合学习和记忆。
+
+------
+
+## 6、📒 Angular 路由
+
+------
+
+✅ 一、什么是路由？
+
+Angular 路由用于在 **单页面应用（SPA）中实现页面导航**，通过不同的 URL 显示不同的组件。
+
+------
+
+✅ 二、基本使用步骤
+
+1️⃣ 配置路由
+
+```ts
+// app-routing.module.ts
+const routes: Routes = [
+  { path: '', component: HomeComponent },
+  { path: 'about', component: AboutComponent },
+  { path: '**', component: NotFoundComponent } // 通配符 404
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule {}
+```
+
+------
+
+2️⃣ 挂载 `<router-outlet>`
+
+```html
+<!-- app.component.html -->
+<nav>
+  <a routerLink="/">Home</a>
+  <a routerLink="/about">About</a>
+</nav>
+
+<router-outlet></router-outlet>
+```
+
+------
+
+3️⃣ 路由跳转方式
+
+- #### **模板跳转：**
+
+```html
+<a routerLink="/about">跳转到About</a>
+```
+
+- #### **代码跳转：**
+
+```ts
+this.router.navigate(['/about']);
+```
+
+------
+
+✅ 三、路由参数
+
+🔸 1. 路径参数（Path Params）
+
+```ts
+{ path: 'user/:id', component: UserComponent }
+<a [routerLink]="['/user', 42]">查看用户</a>
+// 获取参数
+this.route.paramMap.subscribe(params => {
+  const id = params.get('id');
+});
+```
+
+------
+
+🔸 2. 查询参数（Query Params）
+
+```ts
+this.router.navigate(['/user'], { queryParams: { id: 123 } });
+this.route.queryParamMap.subscribe(params => {
+  const id = params.get('id');
+});
+```
+
+------
+
+✅ 四、嵌套路由（子路由）
+
+```ts
+const routes: Routes = [
+  {
+    path: 'admin',
+    component: AdminComponent,
+    children: [
+      { path: 'dashboard', component: DashboardComponent },
+      { path: 'settings', component: SettingsComponent }
+    ]
+  }
+];
+<!-- admin.component.html -->
+<router-outlet></router-outlet>
+```
+
+------
+
+✅ 五、重定向 & 通配符
+
+```ts
+const routes: Routes = [
+  { path: '', redirectTo: '/home', pathMatch: 'full' },  // 重定向
+  { path: '**', component: NotFoundComponent }           // 404
+];
+```
+
+------
+
+✅ 六、路由守卫（Router Guards）
+
+| 守卫类型        | 说明                   |
+| --------------- | ---------------------- |
+| `CanActivate`   | 进入路由前是否允许导航 |
+| `CanDeactivate` | 离开路由前是否允许导航 |
+| `CanLoad`       | 是否允许加载懒加载模块 |
+| `Resolve`       | 在导航前预加载数据     |
+
+示例：
+
+```ts
+@Injectable({ providedIn: 'root' })
+export class AuthGuard implements CanActivate {
+  canActivate(): boolean {
+    return true; // 返回 false 会阻止进入路由
+  }
+}
+{ path: 'admin', component: AdminComponent, canActivate: [AuthGuard] }
+```
+
+------
+
+✅ 七、懒加载模块（Lazy Loading）
+
+```ts
+const routes: Routes = [
+  {
+    path: 'admin',
+    loadChildren: () => import('./admin/admin.module').then(m => m.AdminModule)
+  }
+];
+```
+
+------
+
+✅ 八、获取当前路由信息
+
+```ts
+this.router.url                // 当前完整URL
+this.route.snapshot.routeConfig?.path  // 当前路由路径
+```
+
+------
+
+✅ 九、页面跳转替换（不留历史记录）
+
+```ts
+this.router.navigate(['/login'], { replaceUrl: true });
+```
+
+------
+
+✅ 快速对照表
+
+| 功能             | 示例                                        |
+| ---------------- | ------------------------------------------- |
+| 定义路由         | `path: 'about', component: AboutComponent`  |
+| 跳转             | `router.navigate(['/path'])`                |
+| 动态路径参数     | `path: 'user/:id'`                          |
+| 查询参数         | `queryParams: { key: value }`               |
+| 嵌套路由         | `children: [...]`                           |
+| 重定向           | `redirectTo: '/home'`                       |
+| 404 页面         | `path: '**'`                                |
+| 路由守卫         | `canActivate`, `canDeactivate`, etc.        |
+| 懒加载模块       | `loadChildren: () => import(...).then(...)` |
+| 不留历史记录跳转 | `{ replaceUrl: true }`                      |
+
+------
+
+如你需要，我可以额外整理：
+ ✅ 每种路由守卫详细用法、
+ ✅ 路由动画、
+ ✅ 路由复用策略（RouteReuseStrategy）等进阶内容。
+
+需要我继续整理吗？
+
 
 
 ## 6.🧠 路由守卫
@@ -1103,7 +1301,7 @@ this.route.data.subscribe(data => {
 
 
 
-在 Angular 中，表单校验是表单系统中非常重要的一部分。它支持 **模板驱动表单（Template-driven Forms）** 和 **响应式表单（Reactive Forms）** 两种模式，校验方式灵活、强大，适用于各种场景。
+
 
 ------
 
@@ -1251,109 +1449,286 @@ this.form = this.fb.group({
 
 ## 8.🧠 组件通信
 
-### 一、基本概念
-
-| 装饰器      | 用途           | 数据方向 | 说明                       |
-| ----------- | -------------- | -------- | -------------------------- |
-| `@Input()`  | 父传子         | 父 ➡ 子  | 父组件向子组件传递数据     |
-| `@Output()` | 子传父事件通知 | 子 ➡ 父  | 子组件向父组件发出事件通知 |
+Angular 中的组件通信根据组件关系可分为：**父传子、子传父、兄弟组件、跨层级通信**。
 
 ------
 
-### 二、`@Input()` 用法 —— 父传子
+✅ 1. 父传子（`@Input()`）
 
-✅ 子组件（child.component.ts）
+> 父组件 → 子组件，传递数据或配置项
+
+🔸 子组件定义：
 
 ```ts
-import { Component, Input } from '@angular/core';
+@Input() title!: string;
+```
 
-@Component({
-  selector: 'app-child',
-  template: `<p>子组件收到：{{ title }}</p>`
-})
-export class ChildComponent {
-  @Input() title!: string;
+🔸 父组件使用：
+
+```html
+<app-child [title]="'我是父组件传来的标题'"></app-child>
+```
+
+------
+
+✅ 2. 子传父（`@Output()` + `EventEmitter`）
+
+> 子组件 → 父组件，传递事件/数据
+
+🔸 子组件定义：
+
+```ts
+@Output() sendData = new EventEmitter<string>();
+
+someMethod() {
+  this.sendData.emit('来自子组件的数据');
 }
 ```
 
-✅ 父组件（parent.component.html）
+🔸 父组件监听：
 
 ```html
-<app-child [title]="'来自父组件的数据'"></app-child>
+<app-child (sendData)="handleChildData($event)"></app-child>
+handleChildData(data: string) {
+  console.log(data);
+}
 ```
 
 ------
 
-### 三、`@Output()` 用法 —— 子传父
+✅ 3. 父访问子（`@ViewChild()`）
 
-✅ 子组件（child.component.ts）
+> 父组件访问子组件的方法或属性
 
 ```ts
-import { Component, Output, EventEmitter } from '@angular/core';
+@ViewChild(ChildComponent) child!: ChildComponent;
 
-@Component({
-  selector: 'app-child',
-  template: `<button (click)="notifyParent()">点我发消息</button>`
-})
-export class ChildComponent {
-  @Output() message = new EventEmitter<string>();
+ngAfterViewInit() {
+  this.child.someMethod(); // 调用子组件方法
+}
+```
 
-  notifyParent() {
-    this.message.emit('Hello 父组件！');
+------
+
+✅ 4. 获取 DOM 元素（`@ViewChild()` + `ElementRef`）
+
+```html
+<input #myInput />
+@ViewChild('myInput') inputRef!: ElementRef;
+
+ngAfterViewInit() {
+  this.inputRef.nativeElement.focus();
+}
+```
+
+------
+
+✅ 5. 兄弟组件通信（共享服务 + RxJS）
+
+> 没有直接父子关系，使用服务中转
+
+🔸 创建服务：
+
+```ts
+@Injectable({ providedIn: 'root' })
+export class MessageService {
+  private msg$ = new Subject<string>();
+  msgObservable$ = this.msg$.asObservable();
+
+  sendMsg(msg: string) {
+    this.msg$.next(msg);
   }
 }
 ```
 
-✅ 父组件（parent.component.html）
-
-```html
-<app-child (message)="handleMessage($event)"></app-child>
-```
-
-✅ 父组件（parent.component.ts）
+🔸 A 组件发送消息：
 
 ```ts
-handleMessage(msg: string) {
-  console.log('父组件接收到:', msg);
+this.msgService.sendMsg('Hello from A');
+```
+
+🔸 B 组件接收消息：
+
+```ts
+this.msgService.msgObservable$.subscribe(msg => {
+  console.log(msg);
+});
+```
+
+------
+
+✅ 6. 跨层级通信（共享服务 + RxJS 或注入祖先）
+
+> 用服务或者注入祖先组件实现跨多级传值
+
+方法一：共享服务（同上）
+
+方法二：注入祖先组件（适用于层级内）
+
+```ts
+constructor(@Optional() private parent: ParentComponent) {}
+```
+
+------
+
+✅ 7. 路由传参（页面跳转传值）
+
+🔸 传参：
+
+```ts
+this.router.navigate(['/detail'], { queryParams: { id: 123 } });
+```
+
+🔸 接收：
+
+```ts
+this.route.queryParams.subscribe(params => {
+  console.log(params['id']);
+});
+```
+
+------
+
+✅ 8. 使用状态管理库（如 NgRx、Signal）
+
+> 适用于大型项目、全局状态
+
+- ✅ NgRx：Redux 思想，强一致性
+- ✅ Signal（Angular 16+）：响应式状态
+
+------
+
+📌 快速对照表
+
+| 场景             | 方法                           |
+| ---------------- | ------------------------------ |
+| 父传子           | `@Input()`                     |
+| 子传父           | `@Output()` + `EventEmitter`   |
+| 父访问子组件/DOM | `@ViewChild()`                 |
+| 兄弟组件通信     | 服务 + Subject/BehaviorSubject |
+| 跨层级通信       | 服务 / 祖先注入                |
+| 路由页面传参     | `Router` + `ActivatedRoute`    |
+| 全局共享状态     | NgRx / Signal                  |
+
+------
+
+
+
+
+
+## 9、📒 Angular `@ViewChild` 
+
+✅ 基本作用：
+
+`@ViewChild` 用于在父组件中获取子组件实例、DOM 元素或指令实例。
+
+------
+
+✅ 常见用途
+
+| 用途           | 说明                                           |
+| -------------- | ---------------------------------------------- |
+| 获取子组件实例 | 操作子组件的方法、属性                         |
+| 获取 DOM 元素  | 获取并操作原生 HTML 元素，如设置焦点           |
+| 获取指令实例   | 控制某个自定义指令的行为                       |
+| 获取模板引用   | 获取 `ng-template` 的 `TemplateRef` 或容器内容 |
+
+------
+
+✅ 基本语法：
+
+```ts
+@ViewChild(类型或模板引用变量, { static: false })
+```
+
+- `static: false`（默认）：只能在 `ngAfterViewInit` 访问
+- `static: true`：可以在 `ngOnInit` 中访问（很少使用）
+
+------
+
+✅ 示例 1：获取子组件实例
+
+🔸 子组件
+
+```ts
+// child.component.ts
+@Component({ selector: 'app-child', template: `<p>Child works!</p>` })
+export class ChildComponent {
+  sayHello() {
+    console.log('Hello from child!');
+  }
+}
+```
+
+🔸 父组件
+
+```ts
+@ViewChild(ChildComponent) child!: ChildComponent;
+
+ngAfterViewInit() {
+  this.child.sayHello();
 }
 ```
 
 ------
 
-### 四、进阶用法
+✅ 示例 2：获取 DOM 元素
 
-✅ `@Input()` 重命名属性
+🔸 HTML
 
-```ts
-@Input('customName') title!: string;
-// 父组件中使用：[customName]="'值'"
+```html
+<input #myInput type="text" />
 ```
 
-✅ `@Output()` 重命名事件
+🔸 组件类
 
 ```ts
-@Output('notify') message = new EventEmitter();
-// 父组件中使用：(notify)="方法($event)"
+@ViewChild('myInput') inputRef!: ElementRef;
+
+ngAfterViewInit() {
+  this.inputRef.nativeElement.focus();
+}
 ```
 
 ------
 
-### 五、常见用途
+✅ 示例 3：获取 `ng-template`
 
-| 场景         | 使用装饰器                                    | 示例说明           |
-| ------------ | --------------------------------------------- | ------------------ |
-| 表单输入组件 | `@Input()` 接收初始值`@Output()` 抛出变更事件 | 表单封装、双向绑定 |
-| 父子组件通信 | `@Input()` 传配置`@Output()` 通知操作         | 列表项、弹窗控制   |
+```html
+<ng-template #myTemplate>Template Content</ng-template>
+@ViewChild('myTemplate') template!: TemplateRef<any>;
+```
+
+------
+
+✅ 示例 4：获取指令
+
+```html
+<div appHighlight #highlightDir="appHighlight"></div>
+@ViewChild('highlightDir') highlight!: HighlightDirective;
+```
 
 ------
 
-### 六、注意事项
+✅ 生命周期建议：
 
-- `@Input()` 只能父传子，不能反过来；
-- `@Output()` 必须配合 `EventEmitter` 使用；
-- 父组件使用 `$event` 获取子组件传来的参数。
+| 方法                 | 能否访问 ViewChild      |
+| -------------------- | ----------------------- |
+| `ngOnInit`           | 否（除非 static: true） |
+| `ngAfterViewInit`    | ✅ 是                    |
+| `ngAfterViewChecked` | ✅ 是                    |
 
 ------
+
+✅ 总结记忆口诀：
+
+> **"组件查子用 ViewChild，操作 DOM 用 ElementRef，记得 ngAfterViewInit 之后再访问。"**
+
+------
+
+
+
+
 
 
 
